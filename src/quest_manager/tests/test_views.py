@@ -1112,7 +1112,7 @@ class SubmissionCompleteViewTest(ByteDeckTenantTestCase):
                                 semester=self.semester, course=maths, is_completed=True)
         self.client.force_login(self.test_teacher)
 
-        self.client.post(
+        response = self.client.post(
             reverse('quests:approve', args=[submission.id]),
             data={'approve_button': True, 'comment_text': 'nice work', 'awards': [badge.pk]},
         )
@@ -1120,6 +1120,9 @@ class SubmissionCompleteViewTest(ByteDeckTenantTestCase):
         assertion = BadgeAssertion.objects.filter(user=self.test_student, badge=badge).first()
         self.assertIsNotNone(assertion, 'the badge was not granted')
         self.assertEqual(assertion.course, maths)
+        messages = [str(m) for m in response.wsgi_request._messages]
+        self.assertTrue(any(assertion.badge.get_absolute_url() in m for m in messages))
+        self.assertTrue(any(assertion.user.profile.get_absolute_url() in m for m in messages))
 
     def submit_with_payload(self, quest, extra=None):
         """Hand in `quest` with an event-handler payload as the comment text.
